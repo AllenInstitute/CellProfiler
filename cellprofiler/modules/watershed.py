@@ -131,6 +131,17 @@ to touch. The line has the same label as the background.
 """
         )
 
+        self.advanced_watershed = cellprofiler.setting.Binary(
+            text="Apply advanced watershed pre-processing step",
+            value=False,
+            doc="""
+The baseline watershed method can be useful, but it's often found that an initial 
+pre-processing step can vastly improve the accuracy of the watershed algorithm.
+The scikit-image seeded watershed step does not require this, but it has been
+noted to improve subsequent segmentations.
+"""
+        )
+
         self.footprint = cellprofiler.setting.Integer(
             doc="""\
 The connectivity defines the dimensions of the footprint used to scan
@@ -173,28 +184,30 @@ the image is not downsampled.
             self.compactness,
             self.footprint,
             self.downsample,
-            self.watershed_line
+            self.watershed_line,
+            self.advanced_watershed
         ]
 
     def visible_settings(self):
         __settings__ = super(Watershed, self).settings()
 
-        __settings__ = __settings__ + [
+        __settings__ += [
             self.operation
         ]
 
         if self.operation.value == O_DISTANCE:
-            __settings__ = __settings__ + [
+            __settings__ += [
                 self.footprint,
                 self.downsample
             ]
         else:
-            __settings__ = __settings__ + [
+            __settings__ += [
                 self.markers_name,
                 self.mask_name,
                 self.connectivity,
                 self.compactness,
-                self.watershed_line
+                self.watershed_line,
+                self.advanced_watershed
             ]
 
         return __settings__
@@ -210,7 +223,7 @@ the image is not downsampled.
 
         dimensions = x.dimensions
 
-        x_data = x.pixel_data
+        x_data = x.pixel_data.copy()
 
         if self.operation.value == O_DISTANCE:
             original_shape = x_data.shape
@@ -297,6 +310,15 @@ the image is not downsampled.
 
                 mask_data = mask.pixel_data
 
+            if self.advanced_watershed.value:
+                # Invert the image and rescale to full bit depth
+                x_data = skimage.img_as_float(x_data)
+                x_data -= x_data.min()
+                x_data = 1 - x_data
+
+                # Invert the seeds as well
+                markers_data[markers_data > 0] = -markers_data[markers_data > 0]
+
             y_data = skimage.morphology.watershed(
                 image=x_data,
                 markers=markers_data,
@@ -305,6 +327,14 @@ the image is not downsampled.
                 compactness=self.compactness.value,
                 watershed_line=self.watershed_line.value
             )
+
+            if self.advanced_watershed.value:
+                # Copy the location of the "background"
+                zeros = numpy.where(y_data == 0)
+                # Re-shift all of the labels into the positive realm
+                y_data += numpy.abs(numpy.min(y_data)) + 1
+                # Re-apply the background
+                y_data[zeros] = 0
 
         y_data = skimage.measure.label(y_data)
 

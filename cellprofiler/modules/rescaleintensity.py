@@ -137,11 +137,15 @@ This setting controls how the minimum intensity is determined.
    will open all images from the chosen channel at the start of the run.
    This sort of synchronized action may have a severe impact on your
    network file system.
+-  *{PERCENTILE_TRIMMED_VALUE}*: Enter the lower percentile by which to
+   trim the histogram of the image. Values lower than this will be clipped
+   to the calculated minimum.
 """.format(
                 M_MANUAL_IO_RANGE=M_MANUAL_IO_RANGE,
                 CUSTOM_VALUE=CUSTOM_VALUE,
                 LOW_EACH_IMAGE=LOW_EACH_IMAGE,
                 LOW_ALL_IMAGES=LOW_ALL_IMAGES,
+                PERCENTILE_TRIMMED_VALUE=PERCENTILE_TRIMMED_VALUE
             )
         )
 
@@ -163,11 +167,15 @@ This setting controls how the maximum intensity is determined.
    will open all images from the chosen channel at the start of the run.
    This sort of synchronized action may have a severe impact on your
    network file system.
+-  *{PERCENTILE_TRIMMED_VALUE}*: Enter the lower percentile by which to
+   trim the histogram of the image. Values lower than this will be clipped
+   to the calculated minimum.
 """.format(
                 M_MANUAL_IO_RANGE=M_MANUAL_IO_RANGE,
                 CUSTOM_VALUE=CUSTOM_VALUE,
                 HIGH_EACH_IMAGE=HIGH_EACH_IMAGE,
-                HIGH_ALL_IMAGES=HIGH_ALL_IMAGES
+                HIGH_ALL_IMAGES=HIGH_ALL_IMAGES,
+                PERCENTILE_TRIMMED_VALUE=PERCENTILE_TRIMMED_VALUE
             )
         )
 

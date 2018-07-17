@@ -72,86 +72,108 @@ class RescaleIntensity(cellprofiler.module.ImageProcessing):
         super(RescaleIntensity, self).create_settings()
 
         self.rescale_method = cellprofiler.setting.Choice(
-                'Rescaling method',
-                choices=M_ALL, doc='''\
+            text='Rescaling method',
+            choices=M_ALL,
+            doc="""\
 There are a number of options for rescaling the input image:
 
--  *%(M_STRETCH)s:* Find the minimum and maximum values within the
+-  *{M_STRETCH}:* Find the minimum and maximum values within the
    unmasked part of the image (or the whole image if there is no mask)
    and rescale every pixel so that the minimum has an intensity of zero
    and the maximum has an intensity of one.
--  *%(M_MANUAL_INPUT_RANGE)s:* Pixels are scaled from an original range
+-  *{M_MANUAL_INPUT_RANGE}:* Pixels are scaled from an original range
    (which you provide) to the range 0 to 1. Options are
    available to handle values outside of the original range.
    To convert 12-bit images saved in 16-bit format to the correct range,
    use the range 0 to 0.0625. The value 0.0625 is equivalent to
    2\ :sup:`12` divided by 2\ :sup:`16`, so it will convert a 16 bit
    image containing only 12 bits of data to the proper range.
--  *%(M_MANUAL_IO_RANGE)s:* Pixels are scaled from their original
+-  *{M_MANUAL_IO_RANGE}:* Pixels are scaled from their original
    range to the new target range. Options are available to handle values
    outside of the original range.
--  *%(M_DIVIDE_BY_IMAGE_MINIMUM)s:* Divide the intensity value of
+-  *{M_DIVIDE_BY_IMAGE_MINIMUM}:* Divide the intensity value of
    each pixel by the image’s minimum intensity value so that all pixel
    intensities are equal to or greater than 1. The rescaled image can
    serve as an illumination correction function in
    **CorrectIlluminationApply**.
--  *%(M_DIVIDE_BY_IMAGE_MAXIMUM)s:* Divide the intensity value of
+-  *{M_DIVIDE_BY_IMAGE_MAXIMUM}:* Divide the intensity value of
    each pixel by the image’s maximum intensity value so that all pixel
    intensities are less than or equal to 1.
--  *%(M_DIVIDE_BY_VALUE)s:* Divide the intensity value of each pixel
+-  *{M_DIVIDE_BY_VALUE}:* Divide the intensity value of each pixel
    by a value that you choose.
--  *%(M_DIVIDE_BY_MEASUREMENT)s:* The intensity value of each pixel
+-  *{M_DIVIDE_BY_MEASUREMENT}:* The intensity value of each pixel
    is divided by some previously calculated measurement. This
    measurement can be the output of some other module or can be a value
    loaded by the **Metadata** module.
--  *%(M_SCALE_BY_IMAGE_MAXIMUM)s:* Scale an image so that its
+-  *{M_SCALE_BY_IMAGE_MAXIMUM}:* Scale an image so that its
    maximum value is the same as the maximum value within the reference
-   image.''' % globals()
+   image.""".format(
+                M_STRETCH=M_STRETCH,
+                M_MANUAL_INPUT_RANGE=M_MANUAL_INPUT_RANGE,
+                M_MANUAL_IO_RANGE=M_MANUAL_IO_RANGE,
+                M_DIVIDE_BY_IMAGE_MINIMUM=M_DIVIDE_BY_IMAGE_MINIMUM,
+                M_DIVIDE_BY_IMAGE_MAXIMUM=M_DIVIDE_BY_IMAGE_MAXIMUM,
+                M_DIVIDE_BY_VALUE=M_DIVIDE_BY_VALUE,
+                M_DIVIDE_BY_MEASUREMENT=M_DIVIDE_BY_MEASUREMENT,
+                M_SCALE_BY_IMAGE_MAXIMUM=M_SCALE_BY_IMAGE_MAXIMUM
+            )
         )
 
         self.wants_automatic_low = cellprofiler.setting.Choice(
-                'Method to calculate the minimum intensity',
-                LOW_ALL, doc="""\
-*(Used only if “%(M_MANUAL_IO_RANGE)s” is selected)*
+            text='Method to calculate the minimum intensity',
+            choices=LOW_ALL,
+            doc="""\
+*(Used only if “{M_MANUAL_IO_RANGE}” is selected)*
 
 This setting controls how the minimum intensity is determined.
 
--  *%(CUSTOM_VALUE)s:* Enter the minimum intensity manually below.
--  *%(LOW_EACH_IMAGE)s*: use the lowest intensity in this image as the
+-  *{CUSTOM_VALUE}:* Enter the minimum intensity manually below.
+-  *{LOW_EACH_IMAGE}*: use the lowest intensity in this image as the
    minimum intensity for rescaling
--  *%(LOW_ALL_IMAGES)s*: use the lowest intensity from all images in
+-  *{LOW_ALL_IMAGES}*: use the lowest intensity from all images in
    the image group or the experiment if grouping is not being used.
    Note that choosing this option may have undesirable results for a
    large ungrouped experiment split into a number of batches. Each batch
    will open all images from the chosen channel at the start of the run.
    This sort of synchronized action may have a severe impact on your
    network file system.
-""" % globals()
+""".format(
+                M_MANUAL_IO_RANGE=M_MANUAL_IO_RANGE,
+                CUSTOM_VALUE=CUSTOM_VALUE,
+                LOW_EACH_IMAGE=LOW_EACH_IMAGE,
+                LOW_ALL_IMAGES=LOW_ALL_IMAGES,
+            )
         )
 
         self.wants_automatic_high = cellprofiler.setting.Choice(
-                'Method to calculate the maximum intensity',
-                HIGH_ALL, doc="""\
-*(Used only if “%(M_MANUAL_IO_RANGE)s” is selected)*
+            text='Method to calculate the maximum intensity',
+            choices=HIGH_ALL,
+            doc="""\
+*(Used only if “{M_MANUAL_IO_RANGE}” is selected)*
 
 This setting controls how the maximum intensity is determined.
 
--  *%(CUSTOM_VALUE)s*: Enter the maximum intensity manually below.
--  *%(HIGH_EACH_IMAGE)s*: Use the highest intensity in this image as
+-  *{CUSTOM_VALUE}*: Enter the maximum intensity manually below.
+-  *{HIGH_EACH_IMAGE}*: Use the highest intensity in this image as
    the maximum intensity for rescaling
--  *%(HIGH_ALL_IMAGES)s*: Use the highest intensity from all images in
+-  *{HIGH_ALL_IMAGES}*: Use the highest intensity from all images in
    the image group or the experiment if grouping is not being used.
    Note that choosing this option may have undesirable results for a
    large ungrouped experiment split into a number of batches. Each batch
    will open all images from the chosen channel at the start of the run.
    This sort of synchronized action may have a severe impact on your
    network file system.
-""" % globals()
+""".format(
+                M_MANUAL_IO_RANGE=M_MANUAL_IO_RANGE,
+                CUSTOM_VALUE=CUSTOM_VALUE,
+                HIGH_EACH_IMAGE=HIGH_EACH_IMAGE,
+                HIGH_ALL_IMAGES=HIGH_ALL_IMAGES
+            )
         )
 
         self.source_low = cellprofiler.setting.Float(
-            'Lower intensity limit for the input image',
-            0,
+            text='Lower intensity limit for the input image',
+            value=0,
             doc="""\
 *(Used only if "{RESCALE_METHOD}" is "{M_MANUAL_INPUT_RANGE}" or "{M_MANUAL_IO_RANGE}" and
 "{WANTS_AUTOMATIC_LOW}" is "{CUSTOM_VALUE}")*
@@ -159,18 +181,18 @@ This setting controls how the maximum intensity is determined.
 The value of pixels in the input image that you want to rescale to the minimum pixel
 value in the output image. Pixel intensities less than this value in the input image are
 also rescaled to the minimum pixel value in the output image.
-""".format(**{
-                "CUSTOM_VALUE": CUSTOM_VALUE,
-                "M_MANUAL_INPUT_RANGE": M_MANUAL_INPUT_RANGE,
-                "M_MANUAL_IO_RANGE": M_MANUAL_IO_RANGE,
-                "RESCALE_METHOD": self.rescale_method.text,
-                "WANTS_AUTOMATIC_LOW": self.wants_automatic_low.text
-            })
+""".format(
+                CUSTOM_VALUE=CUSTOM_VALUE,
+                M_MANUAL_INPUT_RANGE=M_MANUAL_INPUT_RANGE,
+                M_MANUAL_IO_RANGE=M_MANUAL_IO_RANGE,
+                RESCALE_METHOD=self.rescale_method.text,
+                WANTS_AUTOMATIC_LOW=self.wants_automatic_low.text
+            )
         )
 
         self.source_high = cellprofiler.setting.Float(
-            'Upper intensity limit for the input image',
-            1,
+            text='Upper intensity limit for the input image',
+            value=1,
             doc="""\
 *(Used only if "{RESCALE_METHOD}" is "{M_MANUAL_INPUT_RANGE}" or "{M_MANUAL_IO_RANGE}" and
 "{WANTS_AUTOMATIC_HIGH}" is "{CUSTOM_VALUE}")*
@@ -178,18 +200,18 @@ also rescaled to the minimum pixel value in the output image.
 The value of pixels in the input image that you want to rescale to the maximum pixel
 value in the output image. Pixel intensities less than this value in the input image are
 also rescaled to the maximum pixel value in the output image.
-""".format(**{
-                "CUSTOM_VALUE": CUSTOM_VALUE,
-                "M_MANUAL_INPUT_RANGE": M_MANUAL_INPUT_RANGE,
-                "M_MANUAL_IO_RANGE": M_MANUAL_IO_RANGE,
-                "RESCALE_METHOD": self.rescale_method.text,
-                "WANTS_AUTOMATIC_HIGH": self.wants_automatic_high.text
-            })
+""".format(
+                CUSTOM_VALUE=CUSTOM_VALUE,
+                M_MANUAL_INPUT_RANGE=M_MANUAL_INPUT_RANGE,
+                M_MANUAL_IO_RANGE=M_MANUAL_IO_RANGE,
+                RESCALE_METHOD=self.rescale_method.text,
+                WANTS_AUTOMATIC_HIGH=self.wants_automatic_high.text
+            )
         )
 
         self.source_scale = cellprofiler.setting.FloatRange(
-            'Intensity range for the input image',
-            (0, 1),
+            text='Intensity range for the input image',
+            value=(0, 1),
             doc="""\
 *(Used only if "{RESCALE_METHOD}" is "{M_MANUAL_INPUT_RANGE}" or "{M_MANUAL_IO_RANGE}" and
 "{WANTS_AUTOMATIC_LOW}" is "{CUSTOM_VALUE}" and "{WANTS_AUTOMATIC_HIGH}" is "{CUSTOM_VALUE}")*
@@ -197,60 +219,66 @@ also rescaled to the maximum pixel value in the output image.
 Select the range of pixel intensities in the input image to rescale to the range of output
 pixel intensities. Pixel intensities outside this range will be clipped to the new minimum
 or maximum, respectively.
-""".format(**{
-                "CUSTOM_VALUE": CUSTOM_VALUE,
-                "M_MANUAL_INPUT_RANGE": M_MANUAL_INPUT_RANGE,
-                "M_MANUAL_IO_RANGE": M_MANUAL_IO_RANGE,
-                "RESCALE_METHOD": self.rescale_method.text,
-                "WANTS_AUTOMATIC_HIGH": self.wants_automatic_high.text,
-                "WANTS_AUTOMATIC_LOW": self.wants_automatic_low.text
-            })
+""".format(
+                CUSTOM_VALUE=CUSTOM_VALUE,
+                M_MANUAL_INPUT_RANGE=M_MANUAL_INPUT_RANGE,
+                M_MANUAL_IO_RANGE=M_MANUAL_IO_RANGE,
+                RESCALE_METHOD=self.rescale_method.text,
+                WANTS_AUTOMATIC_HIGH=self.wants_automatic_high.text,
+                WANTS_AUTOMATIC_LOW=self.wants_automatic_low.text
+            )
         )
 
         self.dest_scale = cellprofiler.setting.FloatRange(
-            'Intensity range for the output image',
-            (0, 1),
+            text='Intensity range for the output image',
+            value=(0, 1),
             doc="""\
 *(Used only if "{RESCALE_METHOD}" is "{M_MANUAL_IO_RANGE}")*
 
 Set the range of pixel intensities in the output image. The minimum pixel intensity of the input
 image will be rescaled to the minimum output image intensity. The maximum pixel intensity of the
 output image will be rescaled to the maximum output image intensity.
-""".format(**{
-                "M_MANUAL_IO_RANGE": M_MANUAL_IO_RANGE,
-                "RESCALE_METHOD": self.rescale_method.text
-            })
+""".format(
+                M_MANUAL_IO_RANGE=M_MANUAL_IO_RANGE,
+                RESCALE_METHOD=self.rescale_method.text
+            )
         )
 
         self.matching_image_name = cellprofiler.setting.ImageNameSubscriber(
-            "Select image to match in maximum intensity",
-            cellprofiler.setting.NONE,
+            text="Select image to match in maximum intensity",
+            value=cellprofiler.setting.NONE,
             doc="""\
-*(Used only if “%(M_SCALE_BY_IMAGE_MAXIMUM)s” is selected)*
+*(Used only if “{M_SCALE_BY_IMAGE_MAXIMUM}” is selected)*
 
 Select the image whose maximum you want the rescaled image to match.
-""" % globals()
+""".format(
+                M_SCALE_BY_IMAGE_MAXIMUM=M_SCALE_BY_IMAGE_MAXIMUM
+            )
         )
 
         self.divisor_value = cellprofiler.setting.Float(
-            "Divisor value",
-            1,
+            text="Divisor value",
+            value=1,
             minval=numpy.finfo(float).eps,
             doc="""\
-*(Used only if “%(M_DIVIDE_BY_VALUE)s” is selected)*
+*(Used only if “{M_DIVIDE_BY_VALUE}” is selected)*
 
 Enter the value to use as the divisor for the final image.
-""" % globals()
+""".format(
+                M_DIVIDE_BY_VALUE=M_DIVIDE_BY_VALUE
+            )
         )
 
         self.divisor_measurement = cellprofiler.setting.Measurement(
-            "Divisor measurement",
-            lambda: cellprofiler.measurement.IMAGE,
+            text="Divisor measurement",
+            value=lambda: cellprofiler.measurement.IMAGE,
             doc="""\
-*(Used only if “%(M_DIVIDE_BY_MEASUREMENT)s” is selected)*
+*(Used only if “{M_DIVIDE_BY_MEASUREMENT}” is selected)*
 
 Select the measurement value to use as the divisor for the final image.
-""" % globals()
+""".format(
+                M_DIVIDE_BY_MEASUREMENT=M_DIVIDE_BY_MEASUREMENT
+            )
         )
 
     def settings(self):
@@ -275,13 +303,16 @@ Select the measurement value to use as the divisor for the final image.
         __settings__ += [self.rescale_method]
         if self.rescale_method in (M_MANUAL_INPUT_RANGE, M_MANUAL_IO_RANGE):
             __settings__ += [self.wants_automatic_low]
+
             if self.wants_automatic_low.value == CUSTOM_VALUE:
                 if self.wants_automatic_high != CUSTOM_VALUE:
                     __settings__ += [self.source_low, self.wants_automatic_high]
                 else:
                     __settings__ += [self.wants_automatic_high, self.source_scale]
+
             elif self.wants_automatic_low.value == PERCENTILE_TRIMMED_VALUE:
                 __settings__ += [self.source_low, self.wants_automatic_high, self.source_high]
+                # We want to make sure they're using the right percentile value here
                 self.wants_automatic_high.value = PERCENTILE_TRIMMED_VALUE
             else:
                 __settings__ += [self.wants_automatic_high]
@@ -315,7 +346,7 @@ Select the measurement value to use as the divisor for the final image.
         return d[HIGH_ALL_IMAGES]
 
     def prepare_group(self, workspace, grouping, image_numbers):
-        '''Handle initialization per-group
+        """Handle initialization per-group
 
         pipeline - the pipeline being run
         image_set_list - the list of image sets for the whole experiment
@@ -328,15 +359,13 @@ Select the measurement value to use as the divisor for the final image.
         We use prepare_group to compute the minimum or maximum values
         among all images in the group for certain values of
         "wants_automatic_[low,high]".
-        '''
+        """
         if (self.wants_automatic_high != HIGH_ALL_IMAGES and
-                    self.wants_automatic_low != LOW_ALL_IMAGES):
+                self.wants_automatic_low != LOW_ALL_IMAGES):
             return True
 
-        title = "#%d: RescaleIntensity for %s" % (
-            self.module_num, self.x_name.value)
-        message = ("RescaleIntensity will process %d images while "
-                   "preparing for run" % (len(image_numbers)))
+        title = "#{:d}: RescaleIntensity for {}".format(self.module_num, self.x_name.value)
+        message = ("RescaleIntensity will process {:d} images while preparing for run".format(len(image_numbers)))
         min_value = None
         max_value = None
         for w in workspace.pipeline.run_group_with_yield(
@@ -365,12 +394,13 @@ Select the measurement value to use as the divisor for the final image.
             self.set_automatic_minimum(workspace.image_set_list, min_value)
 
     def is_aggregation_module(self):
-        '''We scan through all images in a group in some cases'''
+        """We scan through all images in a group in some cases"""
         return ((self.wants_automatic_high == HIGH_ALL_IMAGES) or
                 (self.wants_automatic_low == LOW_ALL_IMAGES))
 
     def run(self, workspace):
         input_image = workspace.image_set.get_image(self.x_name.value)
+        output_image = input_image
 
         if self.rescale_method == M_STRETCH:
             output_image = self.stretch(input_image)
@@ -405,13 +435,21 @@ Select the measurement value to use as the divisor for the final image.
 
             workspace.display_data.dimensions = input_image.dimensions
 
-    def rescale(self, image, in_range, out_range=(0.0, 1.0)):
+    @staticmethod
+    def rescale(image, in_range, out_range=(0.0, 1.0)):
         # Convert image to float
         data = 1.0 * image.pixel_data
 
         rescaled = skimage.exposure.rescale_intensity(data, in_range=in_range, out_range=out_range)
 
         return rescaled
+
+    @staticmethod
+    def divide(data, value):
+        if value == 0.0:
+            raise ZeroDivisionError("Cannot divide pixel intensity by 0.")
+
+        return data / float(value)
 
     def stretch(self, input_image):
         data = input_image.pixel_data
@@ -433,12 +471,6 @@ Select the measurement value to use as the divisor for the final image.
         out_range = (self.dest_scale.min, self.dest_scale.max)
 
         return self.rescale(input_image, in_range, out_range)
-
-    def divide(self, data, value):
-        if value == 0.0:
-            raise ZeroDivisionError("Cannot divide pixel intensity by 0.")
-
-        return data / float(value)
 
     def divide_by_image_minimum(self, input_image):
         data = input_image.pixel_data
@@ -487,9 +519,9 @@ Select the measurement value to use as the divisor for the final image.
         return self.divide(input_image.pixel_data * reference_max, image_max)
 
     def get_source_range(self, input_image, workspace):
-        '''Get the source range, accounting for automatically computed values'''
+        """Get the source range, accounting for automatically computed values"""
         if (self.wants_automatic_high == CUSTOM_VALUE and
-                    self.wants_automatic_low == CUSTOM_VALUE):
+                self.wants_automatic_low == CUSTOM_VALUE):
             return self.source_scale.min, self.source_scale.max
 
         input_pixels = input_image.pixel_data

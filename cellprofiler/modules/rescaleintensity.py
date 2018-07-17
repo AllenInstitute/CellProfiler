@@ -279,7 +279,7 @@ Enter the value to use as the divisor for the final image.
 
         self.divisor_measurement = cellprofiler.setting.Measurement(
             text="Divisor measurement",
-            value=lambda: cellprofiler.measurement.IMAGE,
+            object_fn=lambda: cellprofiler.measurement.IMAGE,
             doc="""\
 *(Used only if “{M_DIVIDE_BY_MEASUREMENT}” is selected)*
 

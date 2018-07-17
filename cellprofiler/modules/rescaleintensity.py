@@ -53,12 +53,14 @@ R_SET_TO_ONE = 'Set to one'
 LOW_ALL_IMAGES = 'Minimum of all images'
 LOW_EACH_IMAGE = 'Minimum for each image'
 CUSTOM_VALUE = 'Custom'
-LOW_ALL = [CUSTOM_VALUE, LOW_EACH_IMAGE, LOW_ALL_IMAGES]
+# TODO: Documentation
+PERCENTILE_TRIMMED_VALUE = 'Percentile of image intensity'
+LOW_ALL = [CUSTOM_VALUE, LOW_EACH_IMAGE, LOW_ALL_IMAGES, PERCENTILE_TRIMMED_VALUE]
 
 HIGH_ALL_IMAGES = 'Maximum of all images'
 HIGH_EACH_IMAGE = 'Maximum for each image'
 
-HIGH_ALL = [CUSTOM_VALUE, HIGH_EACH_IMAGE, HIGH_ALL_IMAGES]
+HIGH_ALL = [CUSTOM_VALUE, HIGH_EACH_IMAGE, HIGH_ALL_IMAGES, PERCENTILE_TRIMMED_VALUE]
 
 
 class RescaleIntensity(cellprofiler.module.ImageProcessing):
@@ -278,6 +280,9 @@ Select the measurement value to use as the divisor for the final image.
                     __settings__ += [self.source_low, self.wants_automatic_high]
                 else:
                     __settings__ += [self.wants_automatic_high, self.source_scale]
+            elif self.wants_automatic_low.value == PERCENTILE_TRIMMED_VALUE:
+                __settings__ += [self.source_low, self.wants_automatic_high, self.source_high]
+                self.wants_automatic_high.value = PERCENTILE_TRIMMED_VALUE
             else:
                 __settings__ += [self.wants_automatic_high]
                 if self.wants_automatic_high == CUSTOM_VALUE:
@@ -401,6 +406,7 @@ Select the measurement value to use as the divisor for the final image.
             workspace.display_data.dimensions = input_image.dimensions
 
     def rescale(self, image, in_range, out_range=(0.0, 1.0)):
+        # Convert image to float
         data = 1.0 * image.pixel_data
 
         rescaled = skimage.exposure.rescale_intensity(data, in_range=in_range, out_range=out_range)
@@ -486,22 +492,29 @@ Select the measurement value to use as the divisor for the final image.
                     self.wants_automatic_low == CUSTOM_VALUE):
             return self.source_scale.min, self.source_scale.max
 
-        if (self.wants_automatic_low == LOW_EACH_IMAGE or
-                    self.wants_automatic_high == HIGH_EACH_IMAGE):
-            input_pixels = input_image.pixel_data
-            if input_image.has_mask:
-                input_pixels = input_pixels[input_image.mask]
+        input_pixels = input_image.pixel_data
+        if input_image.has_mask:
+            input_pixels = input_pixels[input_image.mask]
 
+        # Determine the lower limit
         if self.wants_automatic_low == LOW_ALL_IMAGES:
             src_min = self.get_automatic_minimum(workspace.image_set_list)
         elif self.wants_automatic_low == LOW_EACH_IMAGE:
             src_min = numpy.min(input_pixels)
+        elif self.wants_automatic_low == PERCENTILE_TRIMMED_VALUE:
+            percentile = self.source_low.value * 100
+            src_min = numpy.percentile(input_pixels, percentile)
         else:
             src_min = self.source_low.value
+
+        # Determine the upper limit
         if self.wants_automatic_high.value == HIGH_ALL_IMAGES:
             src_max = self.get_automatic_maximum(workspace.image_set_list)
         elif self.wants_automatic_high == HIGH_EACH_IMAGE:
             src_max = numpy.max(input_pixels)
+        elif self.wants_automatic_high == PERCENTILE_TRIMMED_VALUE:
+            percentile = self.source_high.value * 100
+            src_max = numpy.percentile(input_pixels, percentile)
         else:
             src_max = self.source_high.value
         return src_min, src_max

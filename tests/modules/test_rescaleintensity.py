@@ -388,6 +388,38 @@ def test_scale_by_image_maximum_masked(image, mask, module, workspace):
     numpy.testing.assert_array_equal(expected, actual)
 
 
+def test_manual_input_range_percentile_trimmed(image, module, workspace):
+    data = image.pixel_data
+
+    module.rescale_method.value = cellprofiler.modules.rescaleintensity.M_MANUAL_INPUT_RANGE
+
+    module.wants_automatic_low.value = cellprofiler.modules.rescaleintensity.PERCENTILE_TRIMMED_VALUE
+
+    module.wants_automatic_high.value = cellprofiler.modules.rescaleintensity.PERCENTILE_TRIMMED_VALUE
+
+    module.source_low.value = 0.25
+
+    module.source_high.value = 0.75
+
+    module.run(workspace)
+
+    output = workspace.image_set.get_image("RescaleIntensity")
+
+    actual = output.pixel_data
+
+    expected = 1.0 * data
+    min_val = numpy.percentile(expected, 25)
+    max_val = numpy.percentile(expected, 75)
+
+    expected = skimage.exposure.rescale_intensity(1.0 * data, (min_val, max_val))
+
+    numpy.testing.assert_array_equal(expected, actual)
+
+    assert numpy.any(actual == 0.0)
+
+    assert numpy.any(actual == 1.0)
+
+
 class TestRescaleIntensity(unittest.TestCase):
     def test_01_09_load_v1(self):
         data = ('eJztWl9P2zAQd2lhMKSNaRKbtBc/7AE2GqXlj6CaoB3dtG6UVYA2IcSYaV3w'

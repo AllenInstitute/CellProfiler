@@ -2,9 +2,9 @@
 
 import numpy
 import scipy.ndimage
-import skimage.transform
 import cellprofiler.module
 import cellprofiler.setting
+import cellprofiler.measurement
 import _help
 
 __doc__ = """\
@@ -37,6 +37,14 @@ See also
 """.format(**{
     "HELP_ON_SAVING_OBJECTS": _help.HELP_ON_SAVING_OBJECTS
 })
+
+
+I_NEAREST_NEIGHBOR = 'Nearest Neighbor'
+I_BILINEAR = 'Bilinear'
+I_BICUBIC = 'Bicubic'
+
+I_ALL = [I_NEAREST_NEIGHBOR, I_BILINEAR, I_BICUBIC]
+
 
 class ResizeObjects(cellprofiler.module.ObjectProcessing):
     module_name = "ResizeObjects"
@@ -88,6 +96,27 @@ Enter the desired width of the final objects, in pixels.""")
 
 Enter the desired height of the final objects, in pixels.""")
 
+        self.interpolation = cellprofiler.setting.Choice(
+            "Interpolation method",
+            I_ALL,
+            value=I_NEAREST_NEIGHBOR,
+            doc="""\
+-  *{I_NEAREST_NEIGHBOR}*: Each output pixel is given the intensity of the
+   nearest corresponding pixel in the input image.
+-  *{I_BILINEAR}*: Each output pixel is given the intensity of the weighted
+   average of the 2x2 neighborhood at the corresponding position in the
+   input image. 
+-  *{I_BICUBIC}*: Each output pixel is given the intensity of the weighted
+   average of the 4x4 neighborhood at the corresponding position in the
+   input image.
+**Note**: *{I_BILINEAR}* and *{I_BICUBIC}* operations **must** be done per-object
+and can therefore be extremely slow. Caution is advised when using these methods.
+""".format(
+                I_NEAREST_NEIGHBOR=I_NEAREST_NEIGHBOR,
+                I_BILINEAR=I_BILINEAR,
+                I_BICUBIC=I_BICUBIC
+            ))
+
     def settings(self):
         settings = super(ResizeObjects, self).settings()
 
@@ -95,7 +124,8 @@ Enter the desired height of the final objects, in pixels.""")
             self.method,
             self.factor,
             self.width,
-            self.height
+            self.height,
+            self.interpolation
         ]
 
         return settings
@@ -117,11 +147,14 @@ Enter the desired height of the final objects, in pixels.""")
                 self.factor
             ]
 
+        visible_settings += [
+            self.interpolation
+        ]
+
         return visible_settings
 
     def run(self, workspace):
-        self.function = lambda data, method, factor, width, height: \
-            resize(data, (height, width)) if method == "Dimensions" else rescale(data, factor)
+        self.function = resize_or_rescale
 
         super(ResizeObjects, self).run(workspace)
 
@@ -148,28 +181,91 @@ Enter the desired height of the final objects, in pixels.""")
         )
 
 
-def resize(data, size):
+def resize_or_rescale(data, method, factor, width, height, interpolation):
+    if method == "Dimensions":
+        return resize(data, (height, width), spline_order(interpolation))
+    else:
+        return rescale(data, factor, spline_order(interpolation))
+
+
+def spline_order(interpolation):
+    if interpolation == I_NEAREST_NEIGHBOR:
+        return 0
+
+    if interpolation == I_BILINEAR:
+        return 1
+
+    return 3
+
+
+def zoom(data, factor, order):
+    unique = numpy.unique(data)
+    # If nearest neighbor or there are no objects,
+    # just scale the whole image
+    if order == 0 or len(unique) == 1:
+        return scipy.ndimage.zoom(
+            data,
+            factor,
+            order=0,
+            mode="nearest"
+        )
+    else:
+        # Need to perform per-object "zooming"
+        return_data = None
+        for n in unique:
+            # If it's the background, skip
+            if n == 0:
+                continue
+
+            # Make an array that only has the object we
+            # want to scale
+            tmp = data.copy()
+            mask = data == n
+            tmp[~mask] = 0
+
+            # Scale the individual object
+            scaled = scipy.ndimage.zoom(
+                tmp,
+                factor,
+                order=order,
+                mode="nearest"
+            )
+            # Make the return array if it hasn't been made yet.
+            # Reason this must be done here is because we don't know
+            # the size of the final array (and I don't want to try and
+            # re-do a calculation that scipy is doing).
+            if return_data is None:
+                return_data = numpy.zeros_like(scaled)
+            # Set the block in the return array to be anywhere in the
+            # single-object upscaled image that has a value.
+            # This is done because any scaling beyond nearest neighbor
+            # does some aliasing that removes the semblance of an "object".
+            # So, after upscaling the single object, we want to take all pixels
+            # that were assigned a value in that process.
+            return_data[scaled > 0] = n
+        return return_data
+
+
+def resize(data, size, order):
     if data.ndim == 3:
         size = (data.shape[0],) + size
 
-    return scipy.ndimage.zoom(
+    return zoom(
         data,
         numpy.divide(numpy.multiply(1.0, size), data.shape),
-        order=0,
-        mode="nearest"
+        order=order
     )
 
 
 # [SKIMAGE-14] ND-support for skimage.transform.rescale (https://github.com/scikit-image/scikit-image/pull/2587)
-def rescale(data, factor):
+def rescale(data, factor, order):
     factor = (factor, factor)
 
     if data.ndim == 3:
         factor = (1,) + factor
 
-    return scipy.ndimage.zoom(
+    return zoom(
         data,
         factor,
-        order=0,
-        mode="nearest"
+        order=order
     )
